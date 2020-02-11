@@ -1,0 +1,8 @@
+DateTime==4.3
+dlib==19.19.0
+imutils==0.5.3
+numpy==1.18.1
+opencv-python==4.2.0.32
+pytz==2019.3
+scipy==1.4.1
+zope.interface==4.7.1
