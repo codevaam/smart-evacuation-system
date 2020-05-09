@@ -3,7 +3,8 @@ import os
 import pymongo
 import json
 from datetime import datetime
-
+import time
+seconds = time.time()
 
 client = pymongo.MongoClient('db', 27017)
 db = client['db1']
@@ -31,28 +32,68 @@ def index():
 @app.route("/api/log/<int:door>/<int:is_entry>")
 def log_event(door, is_entry):
     def entry(x): return x == 1
-    db_log.insert_one({'door': door, 'is_entry': entry(
-        is_entry), 'time': datetime.now().timestamp()})
-    new_state = update_counters(door, is_entry)
+    # db_log.insert_one({'door': door, 'is_entry': entry(
+    #     is_entry), 'time': datetime.now().timestamp()})
+    new_state = update_counters(door, entry(is_entry))
     return jsonify({'status': 'saved', 'state': new_state})
+
+@app.route("/api/log")
+def log_all():
+    all_log = list(db_log.find())
+    for x in all_log:
+        del x['_id']
+    return jsonify(all_log)
+
+@app.route("/reset")
+def reset_all():
+    db_log.remove({})
+    state.remove({})
+    return jsonify({'logs': db_log.count(), 'state': state.count() })
+
+
+def update_log():
+    current = state.find_one({'index': 1})
+    del current['_id']
+    current['time'] = time.time()
+    current['hour'] = datetime.now().hour
+    current['minute'] = datetime.now().minute
+    current['second'] = datetime.now().second
+    current['ts'] = datetime.now().strftime("%c")
+    db_log.insert_one(current)
 
 
 def update_counters(door, is_entry):
     current = state.find_one()
-    if len(current) == 0:  # Check if document empty
-        state.insert_one({'door1_entries': 0, 'door2_entries': 0,
-                          'door1_exits': 0, 'door2_exits': 0, 'people_count': 0})
+    if current is None:  # Check if document empty
+        current_state = {'index': 1, 'door1_entries': 0, 'door2_entries': 0,
+                         'door1_exits': 0, 'door2_exits': 0, 'people_count': 0}
+        state.insert_one(current_state)
+        update_log()
+        print(state.find_one())
+
     if(door == 1):
         if is_entry:
-            pass
+            state.update_one(
+                {'index': 1}, {'$inc': {'door1_entries': 1, 'people_count': 1}})
+            update_log()
         else:
-            pass
-        pass
-    elif door == 2:
-        pass
+            state.update_one(
+                {'index': 1}, {'$inc': {'door1_exits': 1,'people_count': -1}})
+            update_log()
+    elif(door == 2):
+        if is_entry:
+            state.update_one(
+                {'index': 1}, {'$inc': {'door2_entries': 1, 'people_count': 1}})
+            update_log()
+        else:
+            state.update_one(
+                {'index': 1}, {'$inc': {'door2_exits': 1,'people_count': -1}})
+            update_log()
     else:
         raise ValueError("Invalid Door Number")
-    return {}
+    ret_val = state.find_one()
+    del ret_val['_id']
+    return ret_val
 
 # @app.route("/upload/temperature/<float:temp>/<float:hum>")
 # def temp_upload(temp,hum):
