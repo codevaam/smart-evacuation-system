@@ -4,6 +4,12 @@ import pymongo
 import json
 from datetime import datetime
 import time
+import sys
+
+# sys.path.insert(1, '/home/devam/projects/CSE3009-Project/people-counting-opencv')
+
+from ..people-counter-opencv.people_counter import get_frame
+
 seconds = time.time()
 
 client = pymongo.MongoClient('db', 27017)
@@ -17,6 +23,8 @@ app = Flask(__name__)
 app.config["MONGO_URI"] = "mongodb://db:27017/db1"
 app.config['SECRET_KEY'] = 'secret!'
 
+
+
 # Sanity Check
 @app.route("/ping")
 def ping():
@@ -27,6 +35,17 @@ def ping():
 @app.route("/")
 def index():
     return render_template('index.html')
+def gen(camera):
+    while True:
+        #get camera frame
+        frame = camera.get_frame()
+        yield (b'--frame\r\n'
+               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
+
+@app.route('/video_feed')
+def video_feed():
+    return Response(gen(VideoCamera()),
+                    mimetype='multipart/x-mixed-replace; boundary=frame')
 
 
 @app.route("/api/log/<int:door>/<int:is_entry>")
