@@ -14,6 +14,6 @@ services:
       - "5000:5000"
     volumes:
       - .:/code
-      - ../people-counting-opencv:/code/people-counting-opencv
+      - ../people_counting_opencv:/code/people_counting_opencv
     depends_on:
       - db

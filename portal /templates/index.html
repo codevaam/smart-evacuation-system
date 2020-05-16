@@ -3,6 +3,7 @@
     <head>
         <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
         <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.19.2/axios.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
     </head>
     <body>
 
@@ -41,11 +42,12 @@
             </div>
         </div>
         <div class="stream-div" id="video-stream">
-            <img class="stream" src="http://localhost:9000/"></img>
+            <img class="stream" src=""></img>
         </div>
         <div class="logs" id="log-div">
             <!-- axios call -->
         </div>
+        <canvas id="graph"></canvas>
     </body>
 
     <style>
@@ -112,7 +114,13 @@
                 <tbody>
                 `
             var div2 = document.getElementById('log-div');
+            var resArr = res.data;
+            var room1In = [];
+            var timeStamps1 = [];
             for(var i in res.data) {
+                var inside = resArr[i].door1_exits - resArr[i].door1_entries
+                room1In.push(inside)
+                timeStamps1.push(resArr[i].ts)
                 html2+=`
                     <tr>
                     <th scope="row">${res.data[i].ts}</th>
@@ -122,6 +130,28 @@
             }
             html2+='</tbody></table>'
             div2.innerHTML = html2
+
+
+            var ctx = document.getElementById('graph').getContext('2d');
+            var chart = new Chart(ctx, {
+                // The type of chart we want to create
+                type: 'line',
+                
+                // The data for our dataset
+                data: {
+                    labels: timeStamps1,
+                    datasets: [{
+                        label: 'IN',
+                        borderColor: 'rgb(255, 99, 132)',
+                        data: room1In
+                    }]
+                },
+
+                // Configuration options go here
+                options: {}
+            });
         })
+
+        
     </script>
 </html>
